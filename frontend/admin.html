@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administrator Dashboard | Cloud Delivery & Tracking</title>
+    <meta name="description" content="Authorized administrator operations dashboard for managing shipments, generating tracking IDs, and recording delivery checkpoints.">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22%22 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>">
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <header class="navbar">
+        <div class="nav-container">
+            <a href="admin.html" class="brand">
+                <div class="brand-icon" style="background: linear-gradient(135deg, #10b981, #059669);">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <span class="brand-title">Admin Console</span>
+                    <span class="brand-badge" style="background: rgba(16,185,129,0.15); color: #34d399; border-color: rgba(16,185,129,0.3);">Authenticated</span>
+                </div>
+            </a>
+
+            <div class="nav-links">
+                <div class="health-pill" id="adminHealthBadge">
+                    <span class="health-dot"></span>
+                    <span id="adminHealthText">Probing Cloud...</span>
+                </div>
+                <a href="index.html" class="nav-link" target="_blank">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;">
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                        <polyline points="15 3 21 3 21 9"></polyline>
+                        <line x1="10" y1="14" x2="21" y2="3"></line>
+                    </svg>
+                    Customer Portal
+                </a>
+                <button id="btnLogout" class="btn-action" style="display: none; padding: 8px 14px; border-color: rgba(239, 68, 68, 0.4); color: #f87171;">
+                    Sign Out
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+
+        <!-- Login Card (Shown when unauthenticated) -->
+        <section id="loginSection" style="max-width: 440px; margin: 60px auto 0 auto;">
+            <div class="result-card" style="padding: 36px 30px;">
+                <div style="text-align: center; margin-bottom: 24px;">
+                    <div style="width: 50px; height: 50px; border-radius: 50%; background: rgba(99, 102, 241, 0.15); display: flex; align-items: center; justify-content: center; margin: 0 auto 14px auto;">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                        </svg>
+                    </div>
+                    <h1 style="font-size: 1.45rem; font-weight: 700; margin-bottom: 6px;">Administrator Sign In</h1>
+                    <p style="font-size: 0.85rem; color: var(--text-secondary);">Enter credentials to manage shipments & cloud records</p>
+                </div>
+
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label class="form-label" for="loginUsername">Username</label>
+                        <input type="text" id="loginUsername" class="form-control" value="admin" required autocomplete="username">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="loginPassword">Password</label>
+                        <input type="password" id="loginPassword" class="form-control" value="Admin@2026" required autocomplete="current-password">
+                    </div>
+                    
+                    <button type="submit" id="btnLoginSubmit" class="btn-primary" style="margin-top: 10px;">
+                        Authenticate Session
+                    </button>
+                </form>
+
+                <div style="margin-top: 20px; padding: 12px; background: rgba(255,255,255,0.03); border: 1px dashed var(--border-subtle); border-radius: var(--radius-sm); font-size: 0.8rem; color: var(--text-muted); text-align: center;">
+                    💡 Default Course Seed: <strong>admin</strong> / <strong>Admin@2026</strong>
+                </div>
+            </div>
+        </section>
+
+        <!-- Authenticated Operations Dashboard -->
+        <section id="dashboardSection" style="display: none;">
+            
+            <!-- Dashboard Header & Stats -->
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+                <div>
+                    <h1 style="font-size: 1.85rem; font-weight: 800; letter-spacing: -0.02em;">Shipment Operations</h1>
+                    <p style="font-size: 0.9rem; color: var(--text-secondary);">Manage logistics lifecycles, generate tracking IDs, and record checkpoints.</p>
+                </div>
+                <button id="btnOpenCreateModal" class="btn-nav" style="padding: 10px 20px; font-size: 0.95rem;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    New Shipment
+                </button>
+            </div>
+
+            <!-- Stats Overview Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="stat-label">Total Shipments</span>
+                    <span id="statTotal" class="stat-value">0</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">In Transit</span>
+                    <span id="statInTransit" class="stat-value" style="color: #fbbf24;">0</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">Delivered</span>
+                    <span id="statDelivered" class="stat-value" style="color: #34d399;">0</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">Cloud Backend</span>
+                    <span id="statBackend" class="stat-value" style="font-size: 1.4rem; color: #818cf8;">RDS + EC2</span>
+                </div>
+            </div>
+
+            <!-- Shipments Table Container -->
+            <div class="admin-table-container">
+                <div class="table-toolbar">
+                    <div style="display: flex; gap: 12px; align-items: center; flex: 1; max-width: 500px;">
+                        <input type="text" id="adminSearchInput" class="form-control" placeholder="Search tracking ID, recipient, or product..." style="padding: 8px 14px; font-size: 0.88rem;">
+                    </div>
+                    <div style="display: flex; gap: 12px; align-items: center;">
+                        <select id="statusFilter" class="form-control" style="width: auto; padding: 8px 14px; font-size: 0.88rem;">
+                            <option value="">All Statuses</option>
+                            <option value="CREATED">CREATED</option>
+                            <option value="PACKED">PACKED</option>
+                            <option value="DISPATCHED">DISPATCHED</option>
+                            <option value="IN_TRANSIT">IN_TRANSIT</option>
+                            <option value="OUT_FOR_DELIVERY">OUT_FOR_DELIVERY</option>
+                            <option value="DELIVERED">DELIVERED</option>
+                            <option value="CANCELLED">CANCELLED</option>
+                        </select>
+                        <button id="btnRefresh" class="btn-action" style="padding: 8px 14px;" title="Refresh list">
+                            ↻ Refresh
+                        </button>
+                    </div>
+                </div>
+
+                <div style="overflow-x: auto;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Tracking ID</th>
+                                <th>Product Name</th>
+                                <th>Recipient (PII)</th>
+                                <th>Destination</th>
+                                <th>Status</th>
+                                <th>Updated</th>
+                                <th style="text-align: right;">Operations</th>
+                            </tr>
+                        </thead>
+                        <tbody id="shipmentsTableBody">
+                            <tr>
+                                <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 40px;">
+                                    Loading shipments...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal 1: Create Shipment -->
+    <div id="createShipmentModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Create New Shipment Record</h3>
+                <button type="button" class="modal-close" data-close="createShipmentModal">&times;</button>
+            </div>
+            <form id="createShipmentForm">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label" for="newProduct">Product Item Name</label>
+                        <input type="text" id="newProduct" class="form-control" placeholder="e.g. Dell XPS 15 Laptop" minlength="3" maxlength="200" required>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="newRecipient">Recipient Full Name</label>
+                            <input type="text" id="newRecipient" class="form-control" placeholder="e.g. Rahul Sharma" pattern="^[A-Za-z\s\.\-']{2,100}$" title="Only letters, spaces, hyphens, and periods (min 2 characters)" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="newPhone">Recipient Phone</label>
+                            <input type="tel" id="newPhone" class="form-control" placeholder="e.g. +91 9876543210" pattern="^\+?[0-9\s\-()]{10,20}$" title="Phone number must have between 10 and 15 digits (e.g. +91 9876543210 or 9876543210)" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="newCity">Destination City</label>
+                            <input type="text" id="newCity" class="form-control" placeholder="e.g. Bangalore" pattern="^[A-Za-z\s\.\-]{2,100}$" title="City name must contain only letters and spaces" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="newHub">Origin Logistics Hub</label>
+                            <input type="text" id="newHub" class="form-control" value="Central Fulfillment Hub - Pune" minlength="3" maxlength="200" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="newAddress">Full Street Address (Confidential)</label>
+                        <textarea id="newAddress" class="form-control" placeholder="e.g. Flat 402, Sunshine Towers, MG Road (minimum 10 characters)" minlength="10" maxlength="500" required></textarea>
+                    </div>
+
+                    <button type="submit" id="btnSubmitShipment" class="btn-primary">
+                        Generate Tracking ID & Save
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 2: Update Checkpoint & Status -->
+    <div id="updateEventModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Record Checkpoint Event</h3>
+                <button type="button" class="modal-close" data-close="updateEventModal">&times;</button>
+            </div>
+            <form id="updateEventForm">
+                <input type="hidden" id="eventShipmentId">
+                <div class="modal-body">
+                    <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 14px; margin-bottom: 18px;">
+                        <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Shipment</div>
+                        <div id="eventTrackingDisplay" style="font-family: 'JetBrains Mono', monospace; font-size: 1.15rem; font-weight: 700; color: #ffffff;">TRK-XXXX-XXXXX</div>
+                        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px;">
+                            Current Stage: <span id="eventCurrentStatusDisplay" class="status-badge CREATED" style="font-size: 0.75rem; padding: 2px 8px;">CREATED</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="nextStatusSelect">Target Lifecycle Status</label>
+                        <select id="nextStatusSelect" class="form-control" required>
+                            <!-- Dynamically populated based on valid state transitions -->
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="eventLocation">Checkpoint Facility / City</label>
+                        <input type="text" id="eventLocation" class="form-control" placeholder="e.g. Sorting Center Hub, Hyderabad" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="eventRemarks">Operational Remarks (Optional)</label>
+                        <input type="text" id="eventRemarks" class="form-control" placeholder="e.g. Scanned at regional terminal; out for final run.">
+                    </div>
+
+                    <button type="submit" id="btnSubmitEvent" class="btn-primary">
+                        Commit Checkpoint Update
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 3: View Full Audit Journey -->
+    <div id="auditModal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 680px;">
+            <div class="modal-header">
+                <div>
+                    <h3 class="modal-title">Shipment Audit Detail</h3>
+                    <div id="auditTrackingId" style="font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; color: #818cf8;">TRK-XXXX</div>
+                </div>
+                <button type="button" class="modal-close" data-close="auditModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 14px; margin-bottom: 20px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.88rem;">
+                        <div><strong style="color: var(--text-muted);">Recipient:</strong> <span id="auditRecipient"></span></div>
+                        <div><strong style="color: var(--text-muted);">Phone:</strong> <span id="auditPhone"></span></div>
+                        <div><strong style="color: var(--text-muted);">Destination:</strong> <span id="auditDestination"></span></div>
+                        <div><strong style="color: var(--text-muted);">Product:</strong> <span id="auditProduct"></span></div>
+                        <div style="grid-column: span 2;"><strong style="color: var(--text-muted);">Address:</strong> <span id="auditAddress"></span></div>
+                    </div>
+                </div>
+
+                <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 14px;">Immutable Event Checkpoints</h4>
+                <div id="auditTimelineContainer" class="timeline">
+                    <!-- Events injected dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <script src="js/admin.js"></script>
+</body>
+</html>

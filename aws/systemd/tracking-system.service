@@ -1,0 +1,27 @@
+[Unit]
+Description=Cloud-Based Product Delivery & Real-Time Tracking System (FastAPI)
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/tracking-system
+ExecStart=/home/ubuntu/tracking-system/.venv/bin/uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --workers 2
+
+# Production Environment Variables (Or use /home/ubuntu/tracking-system/.env)
+Environment="DATABASE_URL=postgresql://tracking_admin:YourSecurePassword@your-rds-endpoint.c123456789.us-east-1.rds.amazonaws.com:5432/tracking_db"
+Environment="SECRET_KEY=generate-a-strong-secret-key-for-jwt-signing"
+Environment="DEFAULT_ADMIN_USERNAME=admin"
+Environment="DEFAULT_ADMIN_PASSWORD=Admin@2026"
+
+# Resilience: Automatically restart service if crashed or killed
+Restart=always
+RestartSec=5s
+
+# Standard stream redirection for systemd journal / CloudWatch agent
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=tracking-backend
+
+[Install]
+WantedBy=multi-user.target
