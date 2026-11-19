@@ -54,6 +54,24 @@ function initAuth() {
         showLogin();
     }
 
+    // Quick demo credential autofill handlers
+    const btnFillAdmin = document.getElementById('btnFillAdmin');
+    const btnFillDelivery = document.getElementById('btnFillDelivery');
+    if (btnFillAdmin) {
+        btnFillAdmin.addEventListener('click', () => {
+            document.getElementById('loginUsername').value = 'admin';
+            document.getElementById('loginPassword').value = 'Admin@2026';
+            showToast('Loaded Administrator credentials (admin)', 'info');
+        });
+    }
+    if (btnFillDelivery) {
+        btnFillDelivery.addEventListener('click', () => {
+            document.getElementById('loginUsername').value = 'delivery';
+            document.getElementById('loginPassword').value = 'Delivery@2026';
+            showToast('Loaded Delivery Boy credentials (delivery)', 'info');
+        });
+    }
+
     // Login Form Submit
     const loginForm = document.getElementById('loginForm');
     loginForm.addEventListener('submit', async (e) => {
