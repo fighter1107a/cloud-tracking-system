@@ -26,15 +26,18 @@ class AdminLoginRequest(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
+    role: Optional[str] = "ADMIN"
 
 class TokenData(BaseModel):
     username: Optional[str] = None
+    role: Optional[str] = None
 
 class AdminUserResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     
     id: int
     username: str
+    role: str = "ADMIN"
     is_active: bool
     created_at: datetime
 

@@ -59,17 +59,55 @@ def get_current_admin(
         raise credentials_exception
     return admin
 
+def require_admin(current_user: AdminUser = Depends(get_current_admin)) -> AdminUser:
+    """RBAC Guard: Enforces that the authenticated user holds the ADMIN role."""
+    if current_user.role != "ADMIN":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Permission denied: Only administrators can create or delete shipments."
+        )
+    return current_user
+
+def require_staff(current_user: AdminUser = Depends(get_current_admin)) -> AdminUser:
+    """RBAC Guard: Allows access to either ADMIN or DELIVERY_AGENT."""
+    if current_user.role not in ["ADMIN", "DELIVERY_AGENT"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Permission denied: Authorized staff credentials required."
+        )
+    return current_user
+
 def seed_default_admin(db: Session) -> AdminUser:
-    """Ensures at least one administrator account exists upon initial database launch."""
-    existing_admin = db.query(AdminUser).filter(AdminUser.username == settings.DEFAULT_ADMIN_USERNAME).first()
-    if not existing_admin:
+    """Ensures default administrator and delivery agent accounts exist upon startup."""
+    # 1. Administrator account
+    admin = db.query(AdminUser).filter(AdminUser.username == settings.DEFAULT_ADMIN_USERNAME).first()
+    if not admin:
         admin = AdminUser(
             username=settings.DEFAULT_ADMIN_USERNAME,
             hashed_password=get_password_hash(settings.DEFAULT_ADMIN_PASSWORD),
+            role="ADMIN",
             is_active=True
         )
         db.add(admin)
         db.commit()
         db.refresh(admin)
-        return admin
-    return existing_admin
+    elif not admin.role:
+        admin.role = "ADMIN"
+        db.commit()
+
+    # 2. Delivery Boy / Agent account
+    delivery = db.query(AdminUser).filter(AdminUser.username == "delivery").first()
+    if not delivery:
+        delivery = AdminUser(
+            username="delivery",
+            hashed_password=get_password_hash("Delivery@2026"),
+            role="DELIVERY_AGENT",
+            is_active=True
+        )
+        db.add(delivery)
+        db.commit()
+    elif not delivery.role:
+        delivery.role = "DELIVERY_AGENT"
+        db.commit()
+
+    return admin

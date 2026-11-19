@@ -9,13 +9,22 @@ from backend.app.config import settings
 from backend.app.database import engine, Base, SessionLocal
 from backend.app.auth import seed_default_admin
 from backend.app.routers import health, auth, shipments, tracking
+from sqlalchemy import text
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Initialize database tables
     Base.metadata.create_all(bind=engine)
     
-    # Bootstrap default administrator account
+    # Safe database migration: ensure role column exists on admin_users table
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("ALTER TABLE admin_users ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'ADMIN';"))
+            conn.commit()
+    except Exception:
+        pass
+    
+    # Bootstrap default administrator and delivery agent accounts
     db = SessionLocal()
     try:
         seed_default_admin(db)

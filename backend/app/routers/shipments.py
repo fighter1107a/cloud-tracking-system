@@ -3,7 +3,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from backend.app.auth import get_current_admin
+from backend.app.auth import get_current_admin, require_admin, require_staff
 from backend.app.database import get_db
 from backend.app.models import AdminUser, Shipment, TrackingEvent
 from backend.app.schemas import (
@@ -32,11 +32,12 @@ def generate_tracking_id(db: Session) -> str:
 def create_shipment(
     shipment_in: ShipmentCreate,
     db: Session = Depends(get_db),
-    current_admin: AdminUser = Depends(get_current_admin)
+    current_admin: AdminUser = Depends(require_admin)
 ):
     """
     Administrator endpoint: Creates a new shipment record, generates a unique tracking ID,
     and records the initial CREATED tracking event in a single atomic database transaction.
+    RBAC: Restricted exclusively to users with the ADMIN role (Delivery Agents cannot create).
     """
     tracking_id = generate_tracking_id(db)
     
@@ -72,10 +73,11 @@ def list_shipments(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
     db: Session = Depends(get_db),
-    current_admin: AdminUser = Depends(get_current_admin)
+    current_user: AdminUser = Depends(require_staff)
 ):
     """
-    Administrator endpoint: Lists shipments with optional status filtering and pagination.
+    Staff endpoint: Lists shipments with optional status filtering and pagination.
+    Accessible to both Administrators and Delivery Agents.
     """
     query = db.query(Shipment)
     if status_filter:
@@ -95,10 +97,10 @@ def list_shipments(
 def get_shipment_by_id(
     id: int,
     db: Session = Depends(get_db),
-    current_admin: AdminUser = Depends(get_current_admin)
+    current_user: AdminUser = Depends(require_staff)
 ):
     """
-    Administrator endpoint: Retrieves complete shipment information including recipient details.
+    Staff endpoint: Retrieves complete shipment information including recipient details.
     """
     shipment = db.query(Shipment).filter(Shipment.id == id).first()
     if not shipment:
@@ -110,11 +112,11 @@ def add_tracking_event(
     id: int,
     event_in: TrackingEventCreate,
     db: Session = Depends(get_db),
-    current_admin: AdminUser = Depends(get_current_admin)
+    current_user: AdminUser = Depends(require_staff)
 ):
     """
-    Administrator endpoint: Appends a new checkpoint event and updates the shipment status.
-    Enforces state-machine transition guardrails within an atomic database transaction.
+    Staff endpoint: Appends a new checkpoint event and updates the shipment status.
+    Accessible to both Administrators and Delivery Agents to update in-transit progress.
     """
     shipment = db.query(Shipment).filter(Shipment.id == id).first()
     if not shipment:
@@ -146,11 +148,11 @@ def add_tracking_event(
 def delete_shipment(
     identifier: str,
     db: Session = Depends(get_db),
-    current_admin: AdminUser = Depends(get_current_admin)
+    current_admin: AdminUser = Depends(require_admin)
 ):
     """
     Administrator endpoint: Deletes a shipment and its associated tracking events.
-    Accepts either database numeric ID (e.g. 1) or tracking ID (e.g. TRK-2026-10001).
+    RBAC: Restricted exclusively to users with the ADMIN role.
     """
     query = db.query(Shipment)
     clean_id = identifier.strip().upper()

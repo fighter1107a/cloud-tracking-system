@@ -256,4 +256,71 @@ def test_delete_shipment(client, admin_token):
     track_res = client.get(f"/api/track/{tracking_id}")
     assert track_res.status_code == 404
 
+def test_delivery_agent_rbac_least_privilege(client, admin_token):
+    """
+    Test Role-Based Access Control (RBAC):
+    - Delivery Agent can login and view/update shipment status
+    - Delivery Agent is strictly FORBIDDEN from creating or deleting shipments (HTTP 403)
+    """
+    # 1. Login as Delivery Agent
+    delivery_login = client.post("/api/auth/login-json", json={
+        "username": "delivery",
+        "password": "Delivery@2026"
+    })
+    assert delivery_login.status_code == 200
+    delivery_token = delivery_login.json()["access_token"]
+    assert delivery_login.json()["role"] == "DELIVERY_AGENT"
+
+    # 2. Delivery Agent attempts to CREATE a shipment -> must be rejected (403 Forbidden)
+    create_attempt = client.post(
+        "/api/shipments",
+        headers={"Authorization": f"Bearer {delivery_token}"},
+        json={
+            "product_name": "Unauthorized Package Creation",
+            "recipient_name": "Hacker Tester",
+            "recipient_phone": "+91 9999888877",
+            "destination_address": "Unauthorized Address 123",
+            "destination_city": "Mumbai"
+        }
+    )
+    assert create_attempt.status_code == 403
+    assert "Only administrators can create or delete shipments" in create_attempt.json()["detail"]
+
+    # 3. Admin creates a legitimate shipment
+    admin_create = client.post(
+        "/api/shipments",
+        headers={"Authorization": f"Bearer {admin_token}"},
+        json={
+            "product_name": "Logistics Dispatch Parcel",
+            "recipient_name": "Rohan Deshmukh",
+            "recipient_phone": "+91 9888777666",
+            "destination_address": "Flat 301, Sunshine Heights, FC Road",
+            "destination_city": "Pune",
+            "initial_location": "Pune Hub"
+        }
+    )
+    assert admin_create.status_code == 201
+    shipment_id = admin_create.json()["id"]
+
+    # 4. Delivery Agent UPDATES status -> allowed!
+    update_res = client.post(
+        f"/api/shipments/{shipment_id}/events",
+        headers={"Authorization": f"Bearer {delivery_token}"},
+        json={
+            "status": "PACKED",
+            "checkpoint_location": "Pune Logistics Hub - Bay 2",
+            "remarks": "Package packed and sealed by delivery agent."
+        }
+    )
+    assert update_res.status_code == 200
+    assert update_res.json()["current_status"] == "PACKED"
+
+    # 5. Delivery Agent attempts to DELETE shipment -> must be rejected (403 Forbidden)
+    delete_attempt = client.delete(
+        f"/api/shipments/{shipment_id}",
+        headers={"Authorization": f"Bearer {delivery_token}"}
+    )
+    assert delete_attempt.status_code == 403
+
+
 

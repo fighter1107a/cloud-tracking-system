@@ -39,11 +39,12 @@ def login_for_access_token(
         )
         
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    user_role = getattr(admin, "role", "ADMIN") or "ADMIN"
     access_token = create_access_token(
-        data={"sub": admin.username},
+        data={"sub": admin.username, "role": user_role},
         expires_delta=access_token_expires
     )
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {"access_token": access_token, "token_type": "bearer", "role": user_role}
 
 @router.post("/login-json", response_model=Token)
 def login_with_json(
@@ -67,11 +68,12 @@ def login_with_json(
         )
         
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    user_role = getattr(admin, "role", "ADMIN") or "ADMIN"
     access_token = create_access_token(
-        data={"sub": admin.username},
+        data={"sub": admin.username, "role": user_role},
         expires_delta=access_token_expires
     )
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {"access_token": access_token, "token_type": "bearer", "role": user_role}
 
 @router.get("/me", response_model=AdminUserResponse)
 def read_current_admin(current_admin: AdminUser = Depends(get_current_admin)):

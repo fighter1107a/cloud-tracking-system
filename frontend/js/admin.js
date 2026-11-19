@@ -75,8 +75,9 @@ function initAuth() {
             if (response.ok) {
                 const data = await response.json();
                 localStorage.setItem('admin_token', data.access_token);
-                showToast('Authentication successful', 'success');
-                showDashboard();
+                localStorage.setItem('user_role', data.role || 'ADMIN');
+                showToast(`Signed in as ${data.role === 'DELIVERY_AGENT' ? 'Delivery Agent' : 'Administrator'}`, 'success');
+                showDashboard(data.role);
                 loadShipments();
             } else {
                 const err = await response.json();
@@ -93,6 +94,7 @@ function initAuth() {
     // Logout
     document.getElementById('btnLogout').addEventListener('click', () => {
         localStorage.removeItem('admin_token');
+        localStorage.removeItem('user_role');
         showToast('Signed out successfully', 'success');
         showLogin();
     });
@@ -104,10 +106,13 @@ async function verifyToken(token) {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         if (response.ok) {
-            showDashboard();
+            const user = await response.json();
+            localStorage.setItem('user_role', user.role || 'ADMIN');
+            showDashboard(user.role);
             loadShipments();
         } else {
             localStorage.removeItem('admin_token');
+            localStorage.removeItem('user_role');
             showLogin();
         }
     } catch {
@@ -121,10 +126,43 @@ function showLogin() {
     document.getElementById('btnLogout').style.display = 'none';
 }
 
-function showDashboard() {
+function showDashboard(role) {
+    const currentRole = role || localStorage.getItem('user_role') || 'ADMIN';
     document.getElementById('loginSection').style.display = 'none';
     document.getElementById('dashboardSection').style.display = 'block';
     document.getElementById('btnLogout').style.display = 'inline-block';
+
+    const btnCreate = document.getElementById('btnOpenCreateModal');
+    const roleBadge = document.getElementById('brandRoleBadge');
+    const roleTitle = document.getElementById('brandRoleTitle');
+    const heading = document.getElementById('dashboardHeading');
+    const subheading = document.getElementById('dashboardSubheading');
+
+    if (currentRole === 'DELIVERY_AGENT') {
+        // Delivery Boy Mode: hide create button, update badges
+        if (btnCreate) btnCreate.style.display = 'none';
+        if (roleBadge) {
+            roleBadge.textContent = 'Delivery Agent';
+            roleBadge.style.background = 'rgba(56, 189, 248, 0.15)';
+            roleBadge.style.color = '#38bdf8';
+            roleBadge.style.borderColor = 'rgba(56, 189, 248, 0.3)';
+        }
+        if (roleTitle) roleTitle.textContent = 'Delivery Portal';
+        if (heading) heading.textContent = 'Package Status Management';
+        if (subheading) subheading.textContent = 'Update checkpoint locations and delivery progress in real time.';
+    } else {
+        // Admin Mode: full control
+        if (btnCreate) btnCreate.style.display = 'inline-flex';
+        if (roleBadge) {
+            roleBadge.textContent = 'Administrator';
+            roleBadge.style.background = 'rgba(16, 185, 129, 0.15)';
+            roleBadge.style.color = '#34d399';
+            roleBadge.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+        }
+        if (roleTitle) roleTitle.textContent = 'Admin Console';
+        if (heading) heading.textContent = 'Shipment Operations';
+        if (subheading) subheading.textContent = 'Manage logistics lifecycles, generate tracking IDs, and record checkpoints.';
+    }
 }
 
 /**
